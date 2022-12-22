@@ -11,6 +11,7 @@ type (
 	FileModel interface {
 		Save(ctx context.Context, id, name string) error
 		GetAll(ctx context.Context) ([]*File, error)
+		FindOne(ctx context.Context, id string) (*File, error)
 	}
 
 	fileModel struct {
@@ -53,4 +54,10 @@ func (m *fileModel) GetAll(ctx context.Context) ([]*File, error) {
 	files := []*File{}
 	err := m.db.Find(&files).Error
 	return files, err
+}
+
+func (m *fileModel) FindOne(ctx context.Context, id string) (*File, error) {
+	var file File
+	err := m.db.Where(fmt.Sprintf("id = '%v'", id)).First(&file).Error
+	return &file, err
 }
