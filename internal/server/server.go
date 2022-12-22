@@ -18,6 +18,7 @@ type TagesServer struct {
 }
 
 var getFilesLimit = make(chan int, 100)
+var downloadLimit = make(chan int, 10)
 
 func NewTagesServer(svcCtx *svc.ServiceContext) *TagesServer {
 	return &TagesServer{
@@ -63,4 +64,20 @@ func (t *TagesServer) GetFiles(ctx context.Context, in *emptypb.Empty) (*tages.G
 	case fileResp := <-getFileChan:
 		return fileResp, nil
 	}
+}
+
+func (t *TagesServer) Download(in *tages.DownloadRequest, stream tages.Tages_DownloadServer) error {
+	downloadLimit <- time.Now().Second()
+	defer func() {
+		<-downloadLimit
+	}()
+
+	errChan := make(chan error)
+
+	go func() {
+		l := logic.NewDownloadLogic(t.svcCtx)
+		errChan <- l.DownloadLogic(in, stream)
+	}()
+
+	return <-errChan
 }
