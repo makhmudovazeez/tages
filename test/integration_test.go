@@ -13,11 +13,12 @@ import (
 	"time"
 )
 
-var f string = "2.jpg"
+var (
+	f  string = "2.jpg"
+	ID string
+)
 
 const fileChunk = 8192
-
-var ID string
 
 func TestUploadFile(t *testing.T) {
 	conn, err := grpc.Dial("127.0.0.1:8181", grpc.WithInsecure())
