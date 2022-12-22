@@ -1,9 +1,10 @@
-package test
+package main
 
 import (
 	"context"
 	"github.com/makhmudovazeez/tages/proto/tages"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"log"
 	"os"
 	"path/filepath"
@@ -69,6 +70,23 @@ func TestUploadFile(t *testing.T) {
 
 	_, err = stream.CloseAndRecv()
 	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestGetFiles(t *testing.T) {
+	conn, err := grpc.Dial("127.0.0.1:8181", grpc.WithInsecure())
+	if err != nil {
+		t.Fatalf("failed to dial: %v", err)
+	}
+	defer conn.Close()
+
+	client := tages.NewTagesClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	if _, err := client.GetFiles(ctx, &emptypb.Empty{}); err != nil {
 		t.Error(err)
 	}
 }
