@@ -10,6 +10,7 @@ import (
 type (
 	FileModel interface {
 		Save(ctx context.Context, id, name string) error
+		GetAll(ctx context.Context) ([]*File, error)
 	}
 
 	fileModel struct {
@@ -48,6 +49,8 @@ func (m *fileModel) Save(ctx context.Context, id, name string) error {
 	return nil
 }
 
-func (m *fileModel) Get(ctx context.Context) ([]*File, error) {
-	return nil, nil
+func (m *fileModel) GetAll(ctx context.Context) ([]*File, error) {
+	files := []*File{}
+	err := m.db.Find(&files).Error
+	return files, err
 }

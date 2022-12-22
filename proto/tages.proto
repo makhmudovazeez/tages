@@ -2,8 +2,11 @@ syntax = "proto3";
 
 option go_package = "./tages";
 
+import "google/protobuf/empty.proto";
+
 service Tages {
   rpc UploadFile(stream UploadFileRequest) returns (UploadFileResponse);
+  rpc GetFiles (google.protobuf.Empty) returns(GetFileResponse);
 }
 
 message UploadFileRequest {
@@ -15,4 +18,15 @@ message UploadFileRequest {
 
 message UploadFileResponse {
   string id = 1;
+}
+
+message GetFileResponse {
+  repeated File files = 1;
+}
+
+message File {
+  string id = 1;
+  string name = 2;
+  string created_at = 3;
+  string updated_at = 4;
 }

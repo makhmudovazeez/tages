@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -23,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TagesClient interface {
 	UploadFile(ctx context.Context, opts ...grpc.CallOption) (Tages_UploadFileClient, error)
+	GetFiles(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetFileResponse, error)
 }
 
 type tagesClient struct {
@@ -67,11 +69,21 @@ func (x *tagesUploadFileClient) CloseAndRecv() (*UploadFileResponse, error) {
 	return m, nil
 }
 
+func (c *tagesClient) GetFiles(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetFileResponse, error) {
+	out := new(GetFileResponse)
+	err := c.cc.Invoke(ctx, "/Tages/GetFiles", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TagesServer is the server API for Tages service.
 // All implementations must embed UnimplementedTagesServer
 // for forward compatibility
 type TagesServer interface {
 	UploadFile(Tages_UploadFileServer) error
+	GetFiles(context.Context, *emptypb.Empty) (*GetFileResponse, error)
 	mustEmbedUnimplementedTagesServer()
 }
 
@@ -81,6 +93,9 @@ type UnimplementedTagesServer struct {
 
 func (UnimplementedTagesServer) UploadFile(Tages_UploadFileServer) error {
 	return status.Errorf(codes.Unimplemented, "method UploadFile not implemented")
+}
+func (UnimplementedTagesServer) GetFiles(context.Context, *emptypb.Empty) (*GetFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetFiles not implemented")
 }
 func (UnimplementedTagesServer) mustEmbedUnimplementedTagesServer() {}
 
@@ -121,13 +136,36 @@ func (x *tagesUploadFileServer) Recv() (*UploadFileRequest, error) {
 	return m, nil
 }
 
+func _Tages_GetFiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TagesServer).GetFiles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Tages/GetFiles",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TagesServer).GetFiles(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Tages_ServiceDesc is the grpc.ServiceDesc for Tages service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Tages_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "Tages",
 	HandlerType: (*TagesServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetFiles",
+			Handler:    _Tages_GetFiles_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "UploadFile",
