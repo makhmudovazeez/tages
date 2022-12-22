@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option go_package = "./tages";
+
+service Tages {
+  rpc UploadFile(stream UploadFileRequest) returns (UploadFileResponse);
+}
+
+message UploadFileRequest {
+  oneof data {
+    string mime = 1;
+    bytes chunk = 2;
+  }
+}
+
+message UploadFileResponse {
+  string id = 1;
+}
