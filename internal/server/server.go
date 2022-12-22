@@ -17,6 +17,7 @@ type TagesServer struct {
 	svcCtx svc.ServiceContext
 }
 
+var uploadFileLimit = make(chan int, 10)
 var getFilesLimit = make(chan int, 100)
 var downloadLimit = make(chan int, 10)
 
@@ -27,17 +28,28 @@ func NewTagesServer(svcCtx *svc.ServiceContext) *TagesServer {
 }
 
 func (t *TagesServer) UploadFile(stream tages.Tages_UploadFileServer) error {
-	l := logic.NewUploadFileLogic(t.svcCtx)
-	res, err := l.UploadFileLogic(stream)
-	if err != nil {
-		return err
-	}
+	uploadFileLimit <- time.Now().Second()
+	defer func() {
+		<-uploadFileLimit
+	}()
 
-	if err = stream.SendAndClose(res); err != nil {
-		log.Printf("cannot send response: %v", err)
-		return status.Errorf(codes.Unknown, "cannot send response: %w", err)
-	}
-	return nil
+	errChan := make(chan error)
+
+	go func() {
+		l := logic.NewUploadFileLogic(t.svcCtx)
+		res, err := l.UploadFileLogic(stream)
+		if err != nil {
+			errChan <- err
+		}
+
+		if err = stream.SendAndClose(res); err != nil {
+			log.Printf("cannot send response: %v", err)
+			errChan <- status.Errorf(codes.Unknown, "cannot send response: %w", err)
+		}
+		errChan <- nil
+	}()
+
+	return <-errChan
 }
 
 func (t *TagesServer) GetFiles(ctx context.Context, in *emptypb.Empty) (*tages.GetFileResponse, error) {
