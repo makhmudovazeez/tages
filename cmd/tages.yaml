@@ -1,0 +1,6 @@
+Name: Tages
+Host: 127.0.0.1
+Port: 8181
+SqlLite:
+  File: "tages.db"
+Storage: "./storage"
