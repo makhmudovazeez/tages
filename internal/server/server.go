@@ -9,12 +9,15 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"log"
+	"time"
 )
 
 type TagesServer struct {
 	tages.UnimplementedTagesServer
 	svcCtx svc.ServiceContext
 }
+
+var getFilesLimit = make(chan int, 100)
 
 func NewTagesServer(svcCtx *svc.ServiceContext) *TagesServer {
 	return &TagesServer{
@@ -37,6 +40,27 @@ func (t *TagesServer) UploadFile(stream tages.Tages_UploadFileServer) error {
 }
 
 func (t *TagesServer) GetFiles(ctx context.Context, in *emptypb.Empty) (*tages.GetFileResponse, error) {
-	l := logic.NewGetFilesLogic(t.svcCtx)
-	return l.GetFilesLogic(ctx)
+	getFilesLimit <- time.Now().Second()
+	defer func() {
+		<-getFilesLimit
+	}()
+
+	errChan := make(chan error)
+	getFileChan := make(chan *tages.GetFileResponse)
+
+	go func() {
+		l := logic.NewGetFilesLogic(t.svcCtx)
+		resp, err := l.GetFilesLogic(ctx)
+		if err != nil {
+			errChan <- err
+		}
+		getFileChan <- resp
+	}()
+
+	select {
+	case err := <-errChan:
+		return nil, err
+	case fileResp := <-getFileChan:
+		return fileResp, nil
+	}
 }
