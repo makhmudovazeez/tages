@@ -25,6 +25,7 @@ const _ = grpc.SupportPackageIsVersion7
 type TagesClient interface {
 	UploadFile(ctx context.Context, opts ...grpc.CallOption) (Tages_UploadFileClient, error)
 	GetFiles(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetFileResponse, error)
+	Download(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (Tages_DownloadClient, error)
 }
 
 type tagesClient struct {
@@ -78,12 +79,45 @@ func (c *tagesClient) GetFiles(ctx context.Context, in *emptypb.Empty, opts ...g
 	return out, nil
 }
 
+func (c *tagesClient) Download(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (Tages_DownloadClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Tages_ServiceDesc.Streams[1], "/Tages/Download", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &tagesDownloadClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Tages_DownloadClient interface {
+	Recv() (*DownloadResponse, error)
+	grpc.ClientStream
+}
+
+type tagesDownloadClient struct {
+	grpc.ClientStream
+}
+
+func (x *tagesDownloadClient) Recv() (*DownloadResponse, error) {
+	m := new(DownloadResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // TagesServer is the server API for Tages service.
 // All implementations must embed UnimplementedTagesServer
 // for forward compatibility
 type TagesServer interface {
 	UploadFile(Tages_UploadFileServer) error
 	GetFiles(context.Context, *emptypb.Empty) (*GetFileResponse, error)
+	Download(*DownloadRequest, Tages_DownloadServer) error
 	mustEmbedUnimplementedTagesServer()
 }
 
@@ -96,6 +130,9 @@ func (UnimplementedTagesServer) UploadFile(Tages_UploadFileServer) error {
 }
 func (UnimplementedTagesServer) GetFiles(context.Context, *emptypb.Empty) (*GetFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetFiles not implemented")
+}
+func (UnimplementedTagesServer) Download(*DownloadRequest, Tages_DownloadServer) error {
+	return status.Errorf(codes.Unimplemented, "method Download not implemented")
 }
 func (UnimplementedTagesServer) mustEmbedUnimplementedTagesServer() {}
 
@@ -154,6 +191,27 @@ func _Tages_GetFiles_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Tages_Download_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(DownloadRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(TagesServer).Download(m, &tagesDownloadServer{stream})
+}
+
+type Tages_DownloadServer interface {
+	Send(*DownloadResponse) error
+	grpc.ServerStream
+}
+
+type tagesDownloadServer struct {
+	grpc.ServerStream
+}
+
+func (x *tagesDownloadServer) Send(m *DownloadResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // Tages_ServiceDesc is the grpc.ServiceDesc for Tages service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -171,6 +229,11 @@ var Tages_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "UploadFile",
 			Handler:       _Tages_UploadFile_Handler,
 			ClientStreams: true,
+		},
+		{
+			StreamName:    "Download",
+			Handler:       _Tages_Download_Handler,
+			ServerStreams: true,
 		},
 	},
 	Metadata: "tages.proto",

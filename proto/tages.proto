@@ -7,6 +7,7 @@ import "google/protobuf/empty.proto";
 service Tages {
   rpc UploadFile(stream UploadFileRequest) returns (UploadFileResponse);
   rpc GetFiles (google.protobuf.Empty) returns(GetFileResponse);
+  rpc Download (DownloadRequest) returns (stream DownloadResponse);
 }
 
 message UploadFileRequest {
@@ -29,4 +30,15 @@ message File {
   string name = 2;
   string created_at = 3;
   string updated_at = 4;
+}
+
+message DownloadRequest {
+  string id = 1;
+}
+
+message DownloadResponse {
+  oneof data {
+    string mime = 1;
+    bytes chunk = 2;
+  }
 }
